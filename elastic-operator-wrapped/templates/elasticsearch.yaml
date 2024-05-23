@@ -1,0 +1,41 @@
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: quickstart
+spec:
+  version: 8.2.2
+  secureSettings: 
+  - secretName: azure-elastic-backup-storage
+  nodeSets: 
+  - name: default
+    count: 1
+    podTemplate:
+      spec:
+        nodeSelector:
+          agentpool: elkstack
+        containers:
+        - name: elasticsearch
+          resources:
+            limits:
+              memory: 32Gi
+              cpu: 2
+            requests:
+              memory: 24Gi
+              cpu: 2
+          env:
+          - name: ES_JAVA_OPTS
+            value: "-Xms16g -Xmx16g"
+        priorityClassName: infrastructure-critical
+    config:
+      node.store.allow_mmap: false
+    volumeClaimTemplates:
+    - metadata:
+        name: elasticsearch-data
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 2Ti
+        storageClassName: default
+    
