@@ -35,6 +35,6 @@ spec:
         - ReadWriteOnce
         resources:
           requests:
-            storage: 2Ti
-        storageClassName: default
+            storage: 10Gi
+        storageClassName: local-path
     
