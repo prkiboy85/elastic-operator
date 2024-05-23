@@ -2,5 +2,4 @@ eck-operator:
   webhook:
     enabled: false
   replicaCount: 1
-  nodeSelector:
-    agentpool: elkstack
+  nodeSelector: {}

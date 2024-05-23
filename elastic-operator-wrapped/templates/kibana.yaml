@@ -12,8 +12,7 @@ spec:
     name: quickstart
   podTemplate:
     spec:
-      nodeSelector:
-        agentpool: elkstack
+      nodeSelector: {}
       containers:
       - name: kibana
         readinessProbe:

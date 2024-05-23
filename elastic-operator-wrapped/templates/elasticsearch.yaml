@@ -11,8 +11,7 @@ spec:
     count: 1
     podTemplate:
       spec:
-        nodeSelector:
-          agentpool: elkstack
+        nodeSelector: {}
         containers:
         - name: elasticsearch
           resources:
