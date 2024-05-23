@@ -60,8 +60,7 @@ logstash:
 
   priorityClassName: "infrastructure-critical"
   
-  nodeSelector:
-    agentpool: elkstack
+  nodeSelector: {}
 
   extraEnvs:
   - name: ELASTICSEARCH_HTTPS_CA_PATH
