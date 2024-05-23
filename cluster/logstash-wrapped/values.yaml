@@ -52,11 +52,11 @@ logstash:
 
   resources:
     requests:
-      cpu: 2
-      memory: "16Gi"
+      cpu: 1
+      memory: "2Gi"
     limits:
-      cpu: 2
-      memory: "16Gi"
+      cpu: 1
+      memory: "2Gi"
 
   priorityClassName: "infrastructure-critical"
   
