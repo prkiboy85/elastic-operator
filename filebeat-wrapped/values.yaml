@@ -1,0 +1,37 @@
+filebeat:
+  daemonset:
+   # Allows you to add any config files in /usr/share/filebeat
+# such as filebeat.yml
+    filebeatConfig:
+      filebeat.yml: |
+        filebeat.inputs:
+          - type: container
+            paths:
+              - /var/log/containers/*.log
+              # Lines that do not start with a date will be added to the previous line
+            multiline:
+                # date pattern
+              pattern: '^[0-9]{4}-[0-9]{2}-[0-9]{2}'
+                # match all lines that do NOT start with a date
+              negate: true
+                # add matching lines to the PREVIOUS line that does not match
+              match: after
+            processors:
+            - add_kubernetes_metadata:
+                host: ${NODE_NAME}
+                matchers:
+                - logs_path:
+                    logs_path: "/var/log/containers/"
+        # output to logstash instance
+        output.logstash:
+          hosts: ["logstash-logstash.newton-logging.svc:5065"]
+
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "100Mi"
+    limits:
+      cpu: "100m"
+      memory: "500Mi"
+      
+  priorityClassName: "infrastructure-critical"

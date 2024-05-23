@@ -1,0 +1,9 @@
+apiVersion: v2
+appVersion: "1.4"
+version: 1.4
+description: A Helm chart for elastic operator (wrapped)
+name: eck-operator
+dependencies:
+- name: eck-operator
+  version: 1.4
+  repository: file://./eck-operator

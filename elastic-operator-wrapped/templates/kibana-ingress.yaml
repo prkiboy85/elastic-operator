@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: quickstart-kb-http
+  labels:
+    app: quickstart-kb
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: "/kibana$1"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+
+spec:
+  ingressClassName: internal
+  rules:
+    - host: api.prod.prod-grnry.azure.cloud.syncier.net
+      http:
+        paths:
+          - path: "/kibana(.*)"
+            pathType: Prefix
+            backend:
+              service:
+                name: quickstart-kb-http
+                port:
+                  number: 5601
+  tls:
+    - hosts:
+        - api.prod.prod-grnry.azure.cloud.syncier.net
+      secretName: lets-encrypt-wildcard

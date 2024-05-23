@@ -1,0 +1,83 @@
+#https://www.steinkogler.org/2020/12/07/part-6-logstash/ good guide to setup tls for logstash
+logstash:
+  replicas: 1
+  persistence:
+    enabled: true
+
+  logstashConfig:
+    logstash.yml: |
+      http.host: 0.0.0.0
+      xpack.monitoring.enabled: false
+  logstashPipeline:
+    uptime.conf: |
+      input {
+        beats {
+          port => 5065
+        }
+      }
+      filter {
+        grok {
+          match => { "message" => "%{TIMESTAMP_ISO8601:timestamp} *%{LOGLEVEL:level} \[%{DATA:application},%{DATA:X-B3-TraceId},%{DATA:X-B3-SpanId},%{DATA:X-Span-Export}] %{DATA:pid} --- *\[%{DATA:thread}] %{DATA:class} *: %{GREEDYDATA:log-message}" }
+          match => { "message" => "\[%{TIMESTAMP_ISO8601:timestamp}\] %{LOGLEVEL:loglevel} \[(?<logger>[^\]]+)\] %{GREEDYDATA:message}" }
+          match => { "message" => "\[%{TIMESTAMP_ISO8601:timestamp}\] %{LOGLEVEL:loglevel} %{GREEDYDATA:message}" }
+          match => { "message" => "%{DATESTAMP:timestamp} %{TZ} \[%{POSINT:pid}\] %{GREEDYDATA:message}" }
+          match => { "message" => "%{TIME:timestamp} %{LOGLEVEL:loglevel}  \[%{DATA:logger}\] %{GREEDYDATA:message}" }
+          match => { "message" => "%{IPORHOST:remote_addr} - %{USERNAME:remote_user} \[%{HTTPDATE:time_local}\] \"%{DATA:request}\" %{INT:status} %{NUMBER:bytes_sent} \"%{DATA:http_referer}\" \"%{DATA:http_user_agent}\"" }
+          match => { "message" => "%{TIMESTAMP_ISO8601:timestamp}    %{LOGLEVEL:loglevel}    %{USERNAME:logger}    %{GREEDYDATA:loggerpackage}    %{GREEDYDATA:message}" }
+        }
+      }
+      output {
+        elasticsearch {
+          hosts => ["https://quickstart-es-http:9200"]
+          index => "%{[@metadata][beat]}-grnry-%{[@metadata][version]}"
+          cacert => "${ELASTICSEARCH_HTTPS_CA_PATH}"
+          user => elastic
+          password => "${elastic}"
+          ssl => true
+        }
+      }
+
+  service:
+    annotations: {}
+    type: ClusterIP
+    ports:
+      - name: beats
+        port: 5065
+        protocol: TCP
+        targetPort: 5065
+      - name: http
+        port: 8080
+        protocol: TCP
+        targetPort: 8080
+
+  resources:
+    requests:
+      cpu: 2
+      memory: "16Gi"
+    limits:
+      cpu: 2
+      memory: "16Gi"
+
+  priorityClassName: "infrastructure-critical"
+  
+  nodeSelector:
+    agentpool: elkstack
+
+  extraEnvs:
+  - name: ELASTICSEARCH_HTTPS_CA_PATH
+    value: "/etc/logstash/certificates/elk-es-http-certs-public.crt"
+
+  envFrom:
+  - secretRef:
+      name: quickstart-es-elastic-user
+
+  extraVolumes: |
+    - name: cert-ca
+      secret:
+        secretName: quickstart-es-http-certs-public
+
+  extraVolumeMounts: |
+    - name: cert-ca
+      mountPath: /etc/logstash/certificates/elk-es-http-certs-public.crt
+      subPath: tls.crt
+      readOnly: true

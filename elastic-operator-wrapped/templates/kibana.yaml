@@ -1,0 +1,60 @@
+apiVersion: kibana.k8s.elastic.co/v1
+kind: Kibana
+metadata:
+  name: quickstart
+spec:
+  version: 8.2.2
+  config:
+     data.autocomplete.valueSuggestions.timeout: 12000000
+     data.autocomplete.valueSuggestions.terminateAfter: 100000000
+  count: 1
+  elasticsearchRef:
+    name: quickstart
+  podTemplate:
+    spec:
+      nodeSelector:
+        agentpool: elkstack
+      containers:
+      - name: kibana
+        readinessProbe:
+          exec:
+            command:
+              - bash
+              - -c
+              - |
+                #!/usr/bin/env bash -e
+                # Disable nss cache to avoid filling dentry cache when calling curl
+                # This is required with Kibana Docker using nss < 3.52
+                export NSS_SDB_USE_CACHE=no
+
+                http () {
+                    local path="${1}"
+                    set -- -XGET -s --fail -L
+
+                    if [ -n "${ELASTICSEARCH_USERNAME}" ] && [ -n "${ELASTICSEARCH_PASSWORD}" ]; then
+                      set -- "$@" -u "${ELASTICSEARCH_USERNAME}:${ELASTICSEARCH_PASSWORD}"
+                    fi
+
+                    STATUS=$(curl --output /dev/null --write-out "%{http_code}" -k "$@"   "https://localhost:5601${path}")
+                    if [[ "${STATUS}" -eq 200 ]]; then
+                      exit 0
+                    fi
+
+                    echo "Error: Got HTTP code ${STATUS} but expected a 200"
+                    exit 1
+                }
+
+                http "/kibana/login"
+        env:
+          - name: SERVER_BASEPATH
+            value: "/kibana"
+          - name: SERVER_REWRITEBASEPATH
+            value: "true"
+        resources:
+          limits:
+            memory: 2Gi
+            cpu: 1
+      priorityClassName: infrastructure-critical
+      
+
+
